@@ -9,7 +9,7 @@ namespace rinha_backend.Context
     public class RinhaContext
     {
         public static string ConnectionString(){
-            return "Server=localhost;Port=5432;Database=rinha;User Id=root;Password=root;" +
+            return "Server=localhost;Port=5432;Database=rinha;User Id=postgres;Password=;" +
                 "Pooling=true;MinPoolSize=1;MaxPoolSize=1024;";
         }
 
@@ -17,18 +17,19 @@ namespace rinha_backend.Context
             return @"SELECT * FROM PESSOA WHERE ID = @id"; 
         }
 
-        public static string GetParam(Busca t){
+        public static string GetParam(string nome, string apelido, string stack){
             string query = "SELECT * FROM PESSOA WHERE 1=1 ";
             
-            if(!string.IsNullOrWhiteSpace(t?.Nome))
-                query += "AND NOME ILIKE @t.Nome";
-            else if(!string.IsNullOrWhiteSpace(t?.Apelido))
-                query += "AND APELIDO ILIKE @t.Apelido";
-            else if(!string.IsNullOrWhiteSpace(t?.Stack))
-                query += "AND STACK ILIKE @t.Stack";
+            if(!string.IsNullOrWhiteSpace(nome))
+                query += "AND NOME ILIKE @nome";
+            else if(!string.IsNullOrWhiteSpace(apelido))
+                query += "AND APELIDO ILIKE @apelido";
+            else if(!string.IsNullOrWhiteSpace(stack))
+                query += "AND STACK ILIKE @stack";
             else
                 throw new ArgumentNullException();
             
+            query += "LIMIT 50";
             return query;
         }
 
@@ -37,8 +38,8 @@ namespace rinha_backend.Context
         }
 
         public static string Post(Pessoa pessoa){
-            return @"INSERT INTO PESSOA (NOME, APELIDO, NASCIMENTO, STACK)" + 
-                    @"VALUES (@Nome, @Apelido, @Nascimento, @Stack) RETURNING ID";
+            return "INSERT INTO PESSOA (ID, NOME, APELIDO, NASCIMENTO, STACK)" + 
+                    "VALUES (@Id, @Nome, @Apelido, @Nascimento, @Stack) RETURNING ID";
         }
     }
 }
