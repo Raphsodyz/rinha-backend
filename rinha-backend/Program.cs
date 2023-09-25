@@ -101,13 +101,11 @@ app.MapGet("/contagem-pessoas", async () => {
 
     try{
         await connection.OpenAsync();
-        using var cmd = new NpgsqlCommand(RinhaContext.Count());
-        using var reader = await cmd.ExecuteReaderAsync();
-
-        DataTable table = new();
-        table.Load(reader);
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = RinhaContext.Count();
+        var reader = await cmd.ExecuteScalarAsync();
         
-        return Results.Ok(table);
+        return Results.Ok(reader);
     }
     finally{
         await connection.CloseAsync();
