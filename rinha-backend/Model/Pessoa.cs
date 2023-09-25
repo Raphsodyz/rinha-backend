@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+
 
 namespace Model
 {
@@ -27,10 +24,18 @@ namespace Model
         public string Apelido { get; set; }
         
         [Column("NASCIMENTO")]
-        public DateTime Nascimento { get; set; }
+        public DateOnly Nascimento { get; set; }
         
-        [StringLength(32)]
         [Column("STACK")]
-        public ICollection<string> Stack { get; set; }
+        public string Stack { get; set; }
+
+        private IEnumerable<string> stackLista => Stack?.Split(',').Select(s => s.Trim()).AsEnumerable();
+
+        internal static void ValidaStack(Pessoa pessoa){
+            if(pessoa.stackLista?.Count() != 0)
+                foreach (string valor in pessoa.stackLista)
+                    if(valor.Length > 32 || valor.Length == 0)
+                        throw new ValidationException();
+        }
     }
 }

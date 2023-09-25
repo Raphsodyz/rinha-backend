@@ -13,6 +13,7 @@ app.MapPost("pessoas", async ([FromBody]Pessoa pessoa) => {
     if(pessoa == null)
         Results.StatusCode(StatusCodes.Status400BadRequest);
 
+    Pessoa.ValidaStack(pessoa);
     using var connection = new NpgsqlConnection(RinhaContext.ConnectionString());
     
     try{
@@ -31,6 +32,9 @@ app.MapPost("pessoas", async ([FromBody]Pessoa pessoa) => {
 
         var location = new Uri($"/pessoas/{novaPessoa}", UriKind.Relative);
         return Results.Created(location, StatusCodes.Status201Created);
+    }
+    catch(ValidationException){
+        return Results.StatusCode(StatusCodes.Status400BadRequest);
     }
     catch(Exception){
         return Results.StatusCode(StatusCodes.Status500InternalServerError);
