@@ -18,13 +18,14 @@ app.MapPost("pessoas", async ([FromBody]Pessoa pessoa) => {
     
     try{
         await connection.OpenAsync();
-        using var cmd = new NpgsqlCommand(RinhaContext.Post(pessoa));
+        using var cmd = connection.CreateCommand();
         
         cmd.Parameters.AddWithValue("@Id", Guid.NewGuid());
         cmd.Parameters.AddWithValue("@Nome", pessoa.Nome);
         cmd.Parameters.AddWithValue("@Apelido", pessoa.Apelido);
         cmd.Parameters.AddWithValue("@Nascimento", pessoa.Nascimento);
         cmd.Parameters.AddWithValue("@Stack", pessoa.Stack);
+        cmd.CommandText = RinhaContext.Post(pessoa);
         
         var novaPessoa = await cmd.ExecuteScalarAsync();
         if(novaPessoa == null)
@@ -49,8 +50,9 @@ app.MapGet("pessoas/{id}", async (Guid id) => {
     
     try{
         await connection.OpenAsync();
-        using var cmd = new NpgsqlCommand(RinhaContext.Get(id));
+        using var cmd = connection.CreateCommand();
         cmd.Parameters.AddWithValue("@id", id);
+        cmd.CommandText = RinhaContext.Get(id);
         using var reader = await cmd.ExecuteReaderAsync();
 
         DataTable table = new();
@@ -72,7 +74,7 @@ app.MapGet("pessoas/{id}", async (Guid id) => {
     }
 });
 
-app.MapGet("/pessoas", async (string nome, string apelido, string stack) => {
+app.MapGet("/pessoas", async (string? nome, string? apelido, string? stack) => {
     using var connection = new NpgsqlConnection(RinhaContext.ConnectionString());
     
     if(string.IsNullOrWhiteSpace(nome) && string.IsNullOrWhiteSpace(apelido) && string.IsNullOrWhiteSpace(stack))
@@ -80,10 +82,16 @@ app.MapGet("/pessoas", async (string nome, string apelido, string stack) => {
 
     try{
         await connection.OpenAsync();
-        using var cmd = new NpgsqlCommand(RinhaContext.GetParam(nome, apelido, stack));
-        cmd.Parameters.AddWithValue("@nome", nome);
-        cmd.Parameters.AddWithValue("@apelido", apelido);
-        cmd.Parameters.AddWithValue("@stack", stack);
+        using var cmd = connection.CreateCommand();
+
+        if(!string.IsNullOrWhiteSpace(nome))
+            cmd.Parameters.AddWithValue("@nome", nome);
+        else if(!string.IsNullOrWhiteSpace(apelido))
+            cmd.Parameters.AddWithValue("@apelido", apelido);
+        else if(!string.IsNullOrWhiteSpace(stack))
+            cmd.Parameters.AddWithValue("@stack", stack);
+
+        cmd.CommandText = RinhaContext.GetParam(nome, apelido, stack);
         using var reader = await cmd.ExecuteReaderAsync();
 
         DataTable table = new();
