@@ -85,19 +85,16 @@ app.MapGet("/pessoas", async (string? nome, string? apelido, string? stack) => {
         using var cmd = connection.CreateCommand();
 
         if(!string.IsNullOrWhiteSpace(nome))
-            cmd.Parameters.AddWithValue("@nome", nome);
+            cmd.Parameters.AddWithValue("@nome", $"%{nome}%");
         else if(!string.IsNullOrWhiteSpace(apelido))
-            cmd.Parameters.AddWithValue("@apelido", apelido);
+            cmd.Parameters.AddWithValue("@apelido", $"%{apelido}%");
         else if(!string.IsNullOrWhiteSpace(stack))
-            cmd.Parameters.AddWithValue("@stack", stack);
+            cmd.Parameters.AddWithValue("@stack", $"%{stack}%");
 
         cmd.CommandText = RinhaContext.GetParam(nome, apelido, stack);
-        using var reader = await cmd.ExecuteReaderAsync();
+        var reader = await cmd.ExecuteScalarAsync();
 
-        DataTable table = new();
-        table.Load(reader);
-        
-        return Results.Ok(table);
+        return Results.Ok(reader);
     }
     finally{
         await connection.CloseAsync();
