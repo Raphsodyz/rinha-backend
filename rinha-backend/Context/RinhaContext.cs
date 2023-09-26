@@ -9,7 +9,7 @@ namespace rinha_backend.Context
     public class RinhaContext
     {
         public static string ConnectionString(){
-            return "Host=localhost;Port=5432;Database=jajaj;User ID=postgres;Password=root;" +
+            return "Host=localhost;Port=5432;Database=rinha;User ID=postgres;Password=;" +
                 "Pooling=true;MinPoolSize=1;MaxPoolSize=1024;";
         }
 
@@ -18,7 +18,7 @@ namespace rinha_backend.Context
         }
 
         public static string GetParam(string nome, string apelido, string stack){
-            string query = "SELECT * FROM PESSOA WHERE 1=1 ";
+            string query = "SELECT ID FROM PESSOA WHERE 1=1 ";
             
             if(!string.IsNullOrWhiteSpace(nome))
                 query += "AND NOME ILIKE @nome ";
@@ -38,8 +38,7 @@ namespace rinha_backend.Context
         }
 
         public static string Post(Pessoa pessoa){
-            return @"INSERT INTO PESSOA (ID, NOME, APELIDO, NASCIMENTO, STACK)
-                    VALUES (@Id, @Nome, @Apelido, @Nascimento, @Stack) RETURNING ID";
+            return @"INSERT INTO PESSOA (ID, NOME, APELIDO, NASCIMENTO, STACK) VALUES (@Id, @Nome, @Apelido, @Nascimento, @Stack) RETURNING ID";
         }
     }
 }
