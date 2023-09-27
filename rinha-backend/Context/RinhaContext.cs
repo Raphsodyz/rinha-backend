@@ -17,20 +17,8 @@ namespace rinha_backend.Context
             return "SELECT * FROM PESSOA WHERE ID = @id"; 
         }
 
-        public static string GetParam(string nome, string apelido, string stack){
-            string query = "SELECT ID FROM PESSOA WHERE 1=1 ";
-            
-            if(!string.IsNullOrWhiteSpace(nome))
-                query += "AND NOME ILIKE @nome ";
-            else if(!string.IsNullOrWhiteSpace(apelido))
-                query += "AND APELIDO ILIKE @apelido ";
-            else if(!string.IsNullOrWhiteSpace(stack))
-                query += "AND STACK ILIKE @stack ";
-            else
-                throw new ArgumentNullException();
-            
-            query += "LIMIT 50";
-            return query;
+        public static string GetParam(string t){
+            return "SELECT ID, NOME, APELIDO, NASCIMENTO, STACK FROM PESSOA WHERE BUSCA ILIKE @t LIMIT 50";
         }
 
         public static string Count(){
