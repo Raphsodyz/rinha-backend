@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.Data;
-using Microsoft.AspNetCore.Mvc;
 using Model;
 using Npgsql;
 using rinha_backend.Context;
@@ -9,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<RinhaContext>();
 var app = builder.Build();
 
-app.MapPost("pessoas", async ([FromBody]Pessoa pessoa) => {
+app.MapPost("pessoas", async (Pessoa pessoa) => {
     if(pessoa == null)
         Results.StatusCode(StatusCodes.Status400BadRequest);
 
@@ -31,7 +30,7 @@ app.MapPost("pessoas", async ([FromBody]Pessoa pessoa) => {
         if(novaPessoa == null)
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
 
-        var location = new Uri($"/pessoas/{novaPessoa}", UriKind.Relative);
+        var location = new Uri($"/pessoas/{(Guid)novaPessoa}", UriKind.Relative);
         return Results.Created(location, StatusCodes.Status201Created);
     }
     catch(ValidationException){
@@ -74,27 +73,31 @@ app.MapGet("pessoas/{id}", async (Guid id) => {
     }
 });
 
-app.MapGet("/pessoas", async (string? nome, string? apelido, string? stack) => {
+app.MapGet("/pessoas", async (string? t) => {
     using var connection = new NpgsqlConnection(RinhaContext.ConnectionString());
     
-    if(string.IsNullOrWhiteSpace(nome) && string.IsNullOrWhiteSpace(apelido) && string.IsNullOrWhiteSpace(stack))
+    if(string.IsNullOrWhiteSpace(t))
         return Results.StatusCode(StatusCodes.Status400BadRequest);
 
     try{
         await connection.OpenAsync();
         using var cmd = connection.CreateCommand();
+        cmd.Parameters.AddWithValue("@t", $"%{t}%");
 
-        if(!string.IsNullOrWhiteSpace(nome))
-            cmd.Parameters.AddWithValue("@nome", $"%{nome}%");
-        else if(!string.IsNullOrWhiteSpace(apelido))
-            cmd.Parameters.AddWithValue("@apelido", $"%{apelido}%");
-        else if(!string.IsNullOrWhiteSpace(stack))
-            cmd.Parameters.AddWithValue("@stack", $"%{stack}%");
+        cmd.CommandText = RinhaContext.GetParam(t);
+        var reader = await cmd.ExecuteReaderAsync();
 
-        cmd.CommandText = RinhaContext.GetParam(nome, apelido, stack);
-        var reader = await cmd.ExecuteScalarAsync();
-
-        return Results.Ok(reader);
+        List<Pessoa> pessoas = new();
+        while(reader.Read())
+            pessoas.Add(new Pessoa(){
+                Id = reader.GetGuid(0),
+                Nome = reader.GetString(1),
+                Apelido =reader.GetString(2),
+                Nascimento = reader.IsDBNull(3) ? new DateOnly() : reader.GetFieldValue<DateOnly>(3),
+                Stack = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
+            });
+                
+        return Results.Ok(pessoas);
     }
     finally{
         await connection.CloseAsync();
