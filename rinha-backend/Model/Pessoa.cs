@@ -24,7 +24,7 @@ namespace Model
         public string Apelido { get; set; }
         
         [Column("NASCIMENTO")]
-        public DateOnly Nascimento { get; set; }
+        public DateOnly? Nascimento { get; set; }
         
         [Column("STACK")]
         public string Stack { get; set; }
