@@ -2,10 +2,10 @@ using System.ComponentModel.DataAnnotations;
 using System.Data;
 using Model;
 using Npgsql;
-using rinha_backend.Context;
+
+const string connectionString = "Host=localhost;Port=5432;Database=rinha;User ID=postgres;Password=root;Pooling=true;MinPoolSize=1;MaxPoolSize=1024;";
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSingleton<RinhaContext>();
 var app = builder.Build();
 
 app.MapPost("pessoas", async (Pessoa pessoa) => {
@@ -13,7 +13,7 @@ app.MapPost("pessoas", async (Pessoa pessoa) => {
         Results.StatusCode(StatusCodes.Status400BadRequest);
 
     Pessoa.ValidaStack(pessoa);
-    using var connection = new NpgsqlConnection(RinhaContext.ConnectionString());
+    using var connection = new NpgsqlConnection(connectionString);
     
     try{
         await connection.OpenAsync();
@@ -24,7 +24,7 @@ app.MapPost("pessoas", async (Pessoa pessoa) => {
         cmd.Parameters.AddWithValue("@Apelido", pessoa.Apelido);
         cmd.Parameters.AddWithValue("@Nascimento", pessoa.Nascimento);
         cmd.Parameters.AddWithValue("@Stack", pessoa.Stack);
-        cmd.CommandText = RinhaContext.Post(pessoa);
+        cmd.CommandText = "INSERT INTO PESSOA (ID, NOME, APELIDO, NASCIMENTO, STACK) VALUES (@Id, @Nome, @Apelido, @Nascimento, @Stack) RETURNING ID";
         
         var novaPessoa = await cmd.ExecuteScalarAsync();
         if(novaPessoa == null)
@@ -45,13 +45,13 @@ app.MapPost("pessoas", async (Pessoa pessoa) => {
 });
 
 app.MapGet("pessoas/{id}", async (Guid id) => {
-    using var connection = new NpgsqlConnection(RinhaContext.ConnectionString());
+    using var connection = new NpgsqlConnection(connectionString);
     
     try{
         await connection.OpenAsync();
         using var cmd = connection.CreateCommand();
         cmd.Parameters.AddWithValue("@id", id);
-        cmd.CommandText = RinhaContext.Get(id);
+        cmd.CommandText = "SELECT * FROM PESSOA WHERE ID = @id";
         using var reader = await cmd.ExecuteReaderAsync();
 
         DataTable table = new();
@@ -74,7 +74,7 @@ app.MapGet("pessoas/{id}", async (Guid id) => {
 });
 
 app.MapGet("/pessoas", async (string? t) => {
-    using var connection = new NpgsqlConnection(RinhaContext.ConnectionString());
+    using var connection = new NpgsqlConnection(connectionString);
     
     if(string.IsNullOrWhiteSpace(t))
         return Results.StatusCode(StatusCodes.Status400BadRequest);
@@ -84,7 +84,7 @@ app.MapGet("/pessoas", async (string? t) => {
         using var cmd = connection.CreateCommand();
         cmd.Parameters.AddWithValue("@t", $"%{t}%");
 
-        cmd.CommandText = RinhaContext.GetParam(t);
+        cmd.CommandText = "SELECT ID, NOME, APELIDO, NASCIMENTO, STACK FROM PESSOA WHERE BUSCA ILIKE @t LIMIT 50";
         var reader = await cmd.ExecuteReaderAsync();
 
         List<Pessoa> pessoas = new();
@@ -105,12 +105,12 @@ app.MapGet("/pessoas", async (string? t) => {
 });
 
 app.MapGet("/contagem-pessoas", async () => {
-    using var connection = new NpgsqlConnection(RinhaContext.ConnectionString());
+    using var connection = new NpgsqlConnection(connectionString);
 
     try{
         await connection.OpenAsync();
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = RinhaContext.Count();
+        cmd.CommandText = "SELECT COUNT(1) FROM PESSOA";
         var reader = await cmd.ExecuteScalarAsync();
         
         return Results.Ok(reader);
