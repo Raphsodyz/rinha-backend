@@ -1,0 +1,56 @@
+version: '3.8'
+
+volumes:
+  rinhadb:
+
+networks:
+  postgresqlWeb:
+  rinhaWeb:
+
+
+services:
+
+  postgresql:
+    image: "postgres:latest"
+    container_name: postgresql
+    ports:
+      - "5432:5432"
+    volumes:
+      - rinhadb:/var/lib/postgresql
+    networks: 
+      - postgresqlWeb
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root    
+      - POSTGRES_DB=rinha
+      - bind-address:0.0.0.0
+  
+  rinha1:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: rinha1
+    ports:
+      - 5000:80
+    networks:
+      - postgresqlWeb
+      - rinhaWeb
+    environment:
+      - DBHOST=postgresql
+    depends_on:
+      - postgresql
+
+  rinha2:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: rinha2
+    ports:
+      - 5000:80
+    networks:
+      - postgresqlWeb
+      - rinhaWeb
+    environment:
+      - DBHOST=postgresql
+    depends_on:
+      - postgresql
