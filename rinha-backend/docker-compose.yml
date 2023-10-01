@@ -3,81 +3,62 @@ version: '3.5'
 volumes:
   rinhadb:
 
-networks:
-  postgresqlWeb:
-  rinhaWeb:
-
-
 services:
 
   postgresql:
     image: "postgres:latest"
-    container_name: postgresql
+    hostname: postgresql
     volumes:
-      - rinhadb:/var/lib/postgresql
-    networks: 
-      - postgresqlWeb
+      - ./Database/Create.sql:/docker-entrypoint-initdb.d/Create.sql
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=root    
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
       - POSTGRES_DB=rinha
     command: postgres -c 'max_connections=450'
     deploy:
       resources:
         limits:
-          cpus: '0.35'
-          memory: '1.3GB'
+          cpus: '0.50'
+          memory: '1.5GB'
   
   api1:
     build:
       context: .
       dockerfile: dockerfile
-    container_name: rinha1
     hostname: api1
-    networks:
-      - postgresqlWeb
-      - rinhaWeb
-    environment:
-      PORT: 3000
-      DB_HOST: localhost
-      DB_POOL: 1024
-      REDIS_HOST: localhost
-      REDIS_POOL_SIZE: 50
-      JOB_BATCH_SIZE: 100
-      CACHE_EXPIRES_SECONDS: 60
     depends_on:
       - postgresql
       - redis
+    environment:
+      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;
+      - ASPNETCORE_URLS=http://+:3000;http://+:3001
+      - DOTNET_TieredPGO=1
+      - DOTNET_ReadyToRun=0
+      - DOTNET_TC_QuickJitForLoops=1
     deploy:
       resources:
         limits:
-          cpus: '0.45'
+          cpus: '0.25'
           memory: '0.5GB'
 
   api2:
     build:
       context: .
       dockerfile: dockerfile
-    container_name: rinha2
     hostname: api2
-    networks:
-      - postgresqlWeb
-      - rinhaWeb
-    environment:
-      PORT: 3001
-      DB_HOST: localhost
-      DB_POOL: 1024
-      REDIS_HOST: localhost
-      REDIS_POOL_SIZE: 50
-      JOB_BATCH_SIZE: 100
-      CACHE_EXPIRES_SECONDS: 60
     depends_on:
       - postgresql
       - redis
+    environment:
+      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;
+      - ASPNETCORE_URLS=http://+:3000;http://+:3001
+      - DOTNET_TieredPGO=1
+      - DOTNET_ReadyToRun=0
+      - DOTNET_TC_QuickJitForLoops=1
     deploy:
       resources:
         limits:
-          cpus: '0.45'
+          cpus: '0.25'
           memory: '0.5GB'
   
   nginx:
@@ -86,8 +67,6 @@ services:
     depends_on:
       - api1
       - api2
-    networks:
-      - rinhaWeb
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
@@ -96,16 +75,18 @@ services:
       resources:
         limits:
           cpus: '0.45'
-          memory: '0.5GB'
+          memory: '0.4GB'
 
   redis:
     image: 'redis:latest'
     hostname: redis
-    networks:
-      - rinhaWeb
-      - redis
     deploy:
       resources:
         limits:
           cpus: '0.05'
           memory: '0.1GB'
+  
+networks:
+  default:
+    driver: bridge
+    name: rinha
