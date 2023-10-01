@@ -3,9 +3,12 @@ using System.Data;
 using Model;
 using Npgsql;
 
-const string connectionString = "Host=localhost;Port=5432;Database=rinha;User ID=postgres;Password=root;Pooling=true;MinPoolSize=1;MaxPoolSize=1024;";
+string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.add;
+
 var app = builder.Build();
 
 app.MapPost("pessoas", async (Pessoa pessoa) => {
