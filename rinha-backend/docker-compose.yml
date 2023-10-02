@@ -3,6 +3,11 @@ version: '3.5'
 volumes:
   rinhadb:
 
+networks:
+  default:
+    driver: bridge
+    name: rinhaWeb
+
 services:
 
   postgresql:
@@ -30,7 +35,7 @@ services:
       - postgresql
       - redis
     environment:
-      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;
+      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Database=rinha;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;
       - ASPNETCORE_URLS=http://+:3000;http://+:3001
       - DOTNET_TieredPGO=1
       - DOTNET_ReadyToRun=0
@@ -50,7 +55,7 @@ services:
       - postgresql
       - redis
     environment:
-      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;
+      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Database=rinha;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;
       - ASPNETCORE_URLS=http://+:3000;http://+:3001
       - DOTNET_TieredPGO=1
       - DOTNET_ReadyToRun=0
@@ -85,8 +90,3 @@ services:
         limits:
           cpus: '0.05'
           memory: '0.1GB'
-  
-networks:
-  default:
-    driver: bridge
-    name: rinha
