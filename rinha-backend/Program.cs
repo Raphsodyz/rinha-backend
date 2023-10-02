@@ -84,7 +84,7 @@ app.MapGet("/pessoas", async (string? t) => {
         using var cmd = connection.CreateCommand();
         cmd.Parameters.AddWithValue("@t", $"%{t}%");
 
-        cmd.CommandText = "SELECT ID, NOME, APELIDO, NASCIMENTO, STACK FROM PESSOA WHERE BUSCA ILIKE @t LIMIT 50";
+        cmd.CommandText = "SELECT * FROM PESSOA WHERE BUSCA ILIKE @t LIMIT 50";
         var reader = await cmd.ExecuteReaderAsync();
 
         List<Pessoa> pessoas = new();
