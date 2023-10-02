@@ -9,7 +9,6 @@ namespace Model
     {
         [Key]
         [Required]
-        [JsonIgnore]
         [Column("ID")]
         public Guid Id { get; set; }
         
