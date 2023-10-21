@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 using System.Data;
 using Model;
 using Npgsql;
-using rinha_backend.Model;
 using ServiceStack.Redis;
 using ServiceStack.Redis.Generic;
 
+const int PG_MAX_INSERT_VALUE = 999;
 string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 RedisEndpoint config = new(){
-    Host = $"{Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")}",
-    Port = 6379,
+    Host = Environment.GetEnvironmentVariable("redis"),
+    Port = 6379
 };
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,20 +25,18 @@ app.MapPost("pessoas", async (Pessoa pessoa) => {
     using var redisClient = new RedisClient(config);
     using var connection = new NpgsqlConnection(connectionString);
     try{
-        IRedisTypedClient<Job> job = redisClient.As<Job>();
-        var jobList = job.Lists["Jobs"];
-        Guid id = Guid.NewGuid();
-        pessoa.Id = id;
-        Job novoJob = new() { Id = id, Pessoa = pessoa };
-        jobList.Add(novoJob);
+        IRedisTypedClient<Pessoa> job = redisClient.As<Pessoa>();
+        var jobList = job.Lists["Pessoas"];;
+        pessoa.Id = Guid.NewGuid();
+        jobList.Add(pessoa);
 
-        if(jobList.Count >= 1000){
-            var listJobs = jobList.ToList();
-            await Job.BatchInsertPg(connection, listJobs);
+        if(jobList.Count >= PG_MAX_INSERT_VALUE){
+            var listPessoas = jobList.ToList();
+            await Pessoa.BatchInsertPg(connection, listPessoas);
             jobList.RemoveAll();
         }
         
-        var location = new Uri($"/pessoas/{id}", UriKind.Relative);
+        var location = new Uri($"/pessoas/{pessoa.Id}", UriKind.Relative);
         return Results.Created(location, StatusCodes.Status201Created);
     }
     catch(ValidationException){
