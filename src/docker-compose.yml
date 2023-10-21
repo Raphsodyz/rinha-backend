@@ -35,7 +35,7 @@ services:
       - postgresql
       - redis
     environment:
-      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Database=rinha;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;
+      - DB_CONNECTION_STRING=Host=postgresql;Username=root;Password=root;Database=rinha;Connection Pruning Interval=1;Connection Idle Lifetime=2;Enlist=false;No Reset On Close=true;MinPoolSize=1;MaxPoolSize=1024;Include Error Detail=True;
       - REDIS_CONNECTION_STRING=redis
       - ASPNETCORE_URLS=http://+:3000;http://+:3001
       - DOTNET_TieredPGO=1
