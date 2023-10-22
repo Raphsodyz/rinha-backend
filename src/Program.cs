@@ -8,7 +8,7 @@ using ServiceStack.Redis.Generic;
 const int PG_MAX_INSERT_VALUE = 999;
 string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 RedisEndpoint config = new(){
-    Host = Environment.GetEnvironmentVariable("redis"),
+    Host = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING"),
     Port = 6379
 };
 
@@ -26,7 +26,7 @@ app.MapPost("pessoas", async (Pessoa pessoa) => {
     using var connection = new NpgsqlConnection(connectionString);
     try{
         IRedisTypedClient<Pessoa> job = redisClient.As<Pessoa>();
-        var jobList = job.Lists["Pessoas"];;
+        var jobList = job.Lists["Pessoas"];
         pessoa.Id = Guid.NewGuid();
         jobList.Add(pessoa);
 
@@ -52,22 +52,15 @@ app.MapPost("pessoas", async (Pessoa pessoa) => {
 });
 
 app.MapGet("pessoas/{id}", async (Guid id) => {
+    RedisClient client = new(config);
+    using var redisClient = new RedisClient(config);
     using var connection = new NpgsqlConnection(connectionString);
-    
     try{
-        await connection.OpenAsync();
-        using var cmd = connection.CreateCommand();
-        cmd.Parameters.AddWithValue("@id", id);
-        cmd.CommandText = "SELECT * FROM PESSOA WHERE ID = @id";
-        using var reader = await cmd.ExecuteReaderAsync();
-
-        DataTable table = new();
-        table.Load(reader);
-
-        if(table.Rows.Count == 0)
+        var pessoa = Pessoa.FindByIdRedis(redisClient, id) ?? Pessoa.FindByIdPostgres(connection, id);
+        if (pessoa == null)
             return Results.StatusCode(StatusCodes.Status404NotFound);
         
-        return Results.Ok(table);
+        return Results.Ok(pessoa.Result);
     }
     catch(ValidationException){
         return Results.StatusCode(StatusCodes.Status422UnprocessableEntity);
@@ -76,6 +69,7 @@ app.MapGet("pessoas/{id}", async (Guid id) => {
         return Results.StatusCode(StatusCodes.Status400BadRequest);
     }
     finally{
+        redisClient.Dispose();
         await connection.CloseAsync();
     }
 });
@@ -96,13 +90,7 @@ app.MapGet("/pessoas", async (string? t) => {
 
         List<Pessoa> pessoas = new();
         while(reader.Read())
-            pessoas.Add(new Pessoa(){
-                Id = reader.GetGuid(0),
-                Nome = reader.GetString(1),
-                Apelido =reader.GetString(2),
-                Nascimento = reader.IsDBNull(3) ? new DateOnly() : reader.GetFieldValue<DateOnly>(3),
-                Stack = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
-            });
+            pessoas.Add(Pessoa.GetPessoa(reader));
                 
         return Results.Ok(pessoas);
     }
